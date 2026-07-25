@@ -1,0 +1,72 @@
+name: Lint SKILL.md frontmatter
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint-skill:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate SKILL.md frontmatter
+        run: |
+          python3 - <<'EOF'
+          import sys
+          import os
+          import re
+          import yaml
+
+          SKILL_FILE = "SKILL.md"
+          REQUIRED_TOP_LEVEL = {"name", "description", "license", "metadata"}
+          ALLOWED_METADATA = {"author", "version"}
+
+          # Read and extract frontmatter
+          with open(SKILL_FILE, encoding="utf-8") as f:
+              content = f.read()
+
+          match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
+          if not match:
+              print("ERROR: No valid YAML frontmatter block found in SKILL.md")
+              sys.exit(1)
+
+          frontmatter = yaml.safe_load(match.group(1))
+          errors = []
+
+          # Check required top-level keys
+          missing = REQUIRED_TOP_LEVEL - set(frontmatter.keys())
+          if missing:
+              errors.append(f"Missing required top-level keys: {sorted(missing)}")
+
+          # Check metadata contains only allowed keys
+          metadata = frontmatter.get("metadata")
+          if metadata is not None:
+              if not isinstance(metadata, dict):
+                  errors.append("'metadata' must be a mapping")
+              else:
+                  extra = set(metadata.keys()) - ALLOWED_METADATA
+                  if extra:
+                      errors.append(
+                          f"'metadata' contains disallowed keys: {sorted(extra)}. "
+                          f"Only {sorted(ALLOWED_METADATA)} are permitted."
+                      )
+
+          # Check name matches directory name
+          skill_dir = os.path.basename(os.path.dirname(os.path.abspath(SKILL_FILE)))
+          skill_name = frontmatter.get("name", "")
+          if skill_name != skill_dir:
+              errors.append(
+                  f"'name' in frontmatter ({skill_name!r}) does not match "
+                  f"the directory name ({skill_dir!r})"
+              )
+
+          if errors:
+              for err in errors:
+                  print(f"ERROR: {err}")
+              sys.exit(1)
+
+          print("SKILL.md frontmatter is valid.")
+          EOF

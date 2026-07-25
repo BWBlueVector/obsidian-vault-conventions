@@ -31,6 +31,16 @@ Encodes four rules as a Claude Code skill that loads automatically when relevant
 
 Drop `SKILL.md` into `.claude/skills/obsidian-vault-conventions/` in your project. Claude Code picks up project-level skills automatically at session start.
 
+## Automated checks
+
+A GitHub Actions workflow (`.github/workflows/lint-skill.yml`) runs on every push and pull request and validates `SKILL.md`'s YAML frontmatter:
+
+- All required top-level keys are present: `name`, `description`, `license`, `metadata`.
+- The `metadata` block contains only `author` and `version` — extra nested keys are the documented failure pattern this skill guards against.
+- The `name` field matches the directory name where `SKILL.md` lives, enforcing the skill's own naming convention.
+
+The check uses only Python's standard library and PyYAML (pre-installed on GitHub-hosted runners), so no additional dependencies are needed.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
