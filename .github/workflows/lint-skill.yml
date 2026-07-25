@@ -7,6 +7,8 @@ on:
 jobs:
   lint-skill:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
